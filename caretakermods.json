@@ -2,6 +2,6 @@
   "schemaVersion": 1,
   "mods": [
     {"id": "dev-probe", "folder": "DevProbe", "prefix": "probe", "guid": "com.ava.thelastcaretaker.devprobe", "kind": "ue4ss-lua"},
-    {"id": "double-time", "folder": "DoubleTime", "prefix": "fastscrap", "guid": "com.ava.thelastcaretaker.doubletime", "kind": "ue4ss-lua"}
+    {"id": "double-time", "displayName": "Faster Scrap/Repair Speed", "folder": "DoubleTime", "prefix": "fastscrap", "guid": "com.ava.thelastcaretaker.doubletime", "kind": "ue4ss-lua"}
   ]
 }

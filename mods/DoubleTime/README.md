@@ -1,4 +1,6 @@
-# DoubleTime
+# Faster Scrap/Repair Speed
+
+Short name: `fastscrap`.
 
 Scrapping and repairing in half their vanilla time, preserving enhancement/tool-upgrade scaling. Version 0.3.1 candidate; UE4SS Lua; logs `[Caretaker.DoubleTime]`.
 
