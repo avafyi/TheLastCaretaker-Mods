@@ -1,4 +1,4 @@
--- DoubleTime: native callers read these reflected base-duration fields directly.
+-- DoubleTime: scale final tool scrapping time; preserve dismantling base data.
 local prefix = "[Caretaker.DoubleTime] "
 local source = debug.getinfo(1, "S").source
 local scriptFolder = source:match("^@(.+)[/\\][^/\\]+$")
@@ -10,6 +10,8 @@ local queued = false
 local lastFailure
 local diagnosticHooks = {}
 local diagnosticState = {}
+local scrapTimingReady = false
+local maintenancePath = "/Game/Blueprints/Equipment/ToolAbilities/BP_ToolAbility_Maintenance_Dismantle.BP_ToolAbility_Maintenance_Dismantle_C"
 
 local function log(event, detail)
     print(prefix .. event .. ": " .. tostring(detail) .. "\n")
@@ -78,16 +80,53 @@ local function apply(item)
                 baselines[key] = original
                 log("baseline", string.format("asset=%s; field=%s; vanilla=%.9g", name, field, original))
             end
-            local desired = original * durationFactor
+            -- Base dismantle data also feeds non-timing gameplay decisions.
+            -- Restore any 0.2.x changes; only scale its final tool duration.
+            local factor = field == "DismantleDuration" and 1.0 or durationFactor
+            local desired = original * factor
             if current ~= desired then
                 item[field] = desired
                 assert(item[field] == desired, "duration write/readback mismatch: " .. name .. ":" .. field)
                 changed = changed + 1
-                log("applied", string.format("asset=%s; field=%s; vanilla=%.9g; modded=%.9g; factor=%.1f", name, field, original, desired, durationFactor))
+                log("applied", string.format("asset=%s; field=%s; vanilla=%.9g; modded=%.9g; factor=%.1f", name, field, original, desired, factor))
             end
         end
     end
     return changed
+end
+
+local function installScrapTiming()
+    if scrapTimingReady then return end
+    local path = maintenancePath .. ":GetActionDuration"
+    local func = StaticFindObject(path)
+    if not func or not func:IsValid() then
+        if diagnosticState.timing ~= "waiting" then
+            diagnosticState.timing = "waiting"
+            log("timing-wait", "scrapping tool class not loaded; base dismantling fields remain vanilla")
+        end
+        return
+    end
+    local preId, postId = RegisterHook(path, function(_, _, targetParam, durationParam)
+        local ok, failure = pcall(function()
+            local original = durationParam:get()
+            local target = targetParam:get()
+            if not finitePositive(original) or not target or not target:IsValid() then return end
+            local desired = original * durationFactor
+            durationParam:set(desired)
+            assert(durationParam:get() == desired, "final scrap duration readback mismatch")
+            local name = target:GetFullName()
+            local state = string.format("vanilla=%.9g; modded=%.9g; factor=%.1f", original, desired, durationFactor)
+            if diagnosticState["timing:" .. name] ~= state then
+                diagnosticState["timing:" .. name] = state
+                log("scrap-duration", "target=" .. name .. "; " .. state)
+            end
+        end)
+        if not ok then log("timing-failure", tostring(failure)) end
+        -- Blueprint post-hook: duration is an out param, not ReturnValue.
+    end)
+    diagnosticHooks[path] = {preId, postId}
+    scrapTimingReady = true
+    log("timing-hook", path .. "; final DoubleProperty out param; no base dismantle scaling")
 end
 
 local function installDiagnostics()
@@ -150,6 +189,7 @@ end
 local function scan(reason)
     local ok, failure = pcall(function()
         initializeLedger()
+        installScrapTiming()
         installDiagnostics()
         local items = FindAllOf("VoyageItem") or {}
         local changed, failed = 0, 0
@@ -162,7 +202,7 @@ local function scan(reason)
         end
         log("scan", string.format("reason=%s; found=%d; fields-changed=%d; failures=%d; factor=%.1f", reason, #items, changed, failed, durationFactor))
         if #items > 0 and failed == 0 then
-            log("ready", "version=0.2.1; item duration fields verified; duration-factor=" .. durationFactor)
+            log("ready", "version=0.3.0; repair fields verified; scrap-hook=" .. tostring(scrapTimingReady) .. "; duration-factor=" .. durationFactor)
         else
             log("fallback", "no complete asset scan yet; waiting for next load event")
         end
@@ -188,13 +228,14 @@ local function queueScan(reason)
     end)
 end
 
-log("init", "version=0.2.1; target=The Last Caretaker; native item-duration data path")
-log("config", "DismantleDuration/RepairDuration factor=0.5; enhancement/tool calculations retained; reload ledger enabled")
+log("init", "version=0.3.0; target=The Last Caretaker; final scrapping duration + repair data path")
+log("config", "final scrap time/RepairDuration factor=0.5; DismantleDuration preserved; reload ledger enabled")
 local ok, failure = pcall(function()
-    for _, name in ipairs({"FindFirstOf", "FindAllOf", "NotifyOnNewObject", "ExecuteWithDelay", "ExecuteInGameThread", "RegisterLoadMapPostHook"}) do
+    for _, name in ipairs({"FindFirstOf", "FindAllOf", "NotifyOnNewObject", "ExecuteWithDelay", "ExecuteInGameThread", "RegisterLoadMapPostHook", "RegisterHook", "StaticFindObject"}) do
         assert(type(_G[name]) == "function", name .. " unavailable")
     end
     NotifyOnNewObject("/Script/Voyage.VoyageItem", function() queueScan("item-loaded") end)
+    NotifyOnNewObject("/Script/Voyage.EquipmentAbilityComponent", function() queueScan("ability-loaded") end)
     RegisterLoadMapPostHook(function() queueScan("map-loaded") end)
     if type(RegisterKeyBindAsync) == "function" and type(IsKeyBindRegistered) == "function" and Key and ModifierKey then
         local modifiers = {ModifierKey.CONTROL, ModifierKey.SHIFT}
@@ -212,7 +253,7 @@ local ok, failure = pcall(function()
         end
     end
     queueScan("startup")
-    log("watching", "startup + debounced item construction + map load; no duration query hook")
+    log("watching", "startup + debounced item/ability construction + map load; final tool duration hook")
 end)
 if not ok then
     log("failed", tostring(failure))
