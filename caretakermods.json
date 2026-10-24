@@ -1,0 +1,6 @@
+{
+  "schemaVersion": 1,
+  "mods": [
+    {"id": "dev-probe", "folder": "DevProbe", "prefix": "probe", "guid": "com.ava.thelastcaretaker.devprobe", "kind": "ue4ss-lua"}
+  ]
+}

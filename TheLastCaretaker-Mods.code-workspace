@@ -1,0 +1,9 @@
+{
+  "folders": [{"path": "."}],
+  "settings": {
+    "search.exclude": {".tools": true, ".cache": true, "artifacts": true, "references/dumps": true},
+    "Lua.runtime.version": "Lua 5.4",
+    "Lua.workspace.library": [".tools/ue4ss/ue4ss/Mods/shared"]
+  },
+  "extensions": {"recommendations": ["sumneko.lua", "ms-vscode.powershell", "ms-python.python"]}
+}

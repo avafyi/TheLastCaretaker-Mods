@@ -1,0 +1,13 @@
+.tools/
+.cache/
+.caretakerdev.local.json
+artifacts/
+outputs/
+**/__pycache__/
+references/downloads/
+references/extracted/
+references/dumps/
+references/decompiled/
+*.log
+*.user
+.vs/

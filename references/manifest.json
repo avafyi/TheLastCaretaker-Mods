@@ -1,0 +1,61 @@
+{
+  "schemaVersion": 1,
+  "inspectedDate": "2026-10-23",
+  "entries": [
+    {
+      "id": "multiplayer-sync-source",
+      "repository": "https://github.com/MrSkelee/TheLastCaretaker_MultiplayerMod",
+      "commit": "e7c53010f7448d5a34f6d9717496b45410c71da6",
+      "url": "https://raw.githubusercontent.com/MrSkelee/TheLastCaretaker_MultiplayerMod/e7c53010f7448d5a34f6d9717496b45410c71da6/mod_files/ue4ss/Mods/MultiplayerSync/Scripts/main.lua",
+      "localPath": "references/downloads/MultiplayerSync-main.lua",
+      "sha256": "60247e53a2f1e11388ba03ecab4ce244cbb4852c402d72b8ad146dd64212424d",
+      "inspection": "Lua folder/API usage, thread dispatch, validity checks, Voyage module hook; runtime untested",
+      "reusePermission": "Not established; GitHub API license metadata absent"
+    },
+    {
+      "id": "tlc-terminal-readme",
+      "repository": "https://github.com/Python727/TLC-Terminal",
+      "commit": "abe000669acd4a8e268bfe5a6e080fca6e173236",
+      "url": "https://raw.githubusercontent.com/Python727/TLC-Terminal/abe000669acd4a8e268bfe5a6e080fca6e173236/README.md",
+      "localPath": "references/downloads/TLC-Terminal-README.md",
+      "sha256": "15dac08777658e035901064d86fb62f548f25c83704dc3a8f4d39a4b719a191b",
+      "inspection": "Author README and source-tree inventory only; no Lua implementation found in inspected tree",
+      "reusePermission": "Not established; GitHub API license metadata absent"
+    },
+    {
+      "id": "ue-modding-guide-map",
+      "repository": "https://github.com/Dmgvol/UE_Modding",
+      "commit": "5811a1af8e34a638da45a862548f327e3a662661",
+      "url": "https://raw.githubusercontent.com/Dmgvol/UE_Modding/5811a1af8e34a638da45a862548f327e3a662661/README.md",
+      "localPath": "references/downloads/UE_Modding-README.md",
+      "sha256": "7c389a8535dd67774004992f9ec6c9c3fcfd2e64f07ddd93edaf25f54d15ee83",
+      "inspection": "Author topic map; linked individual tutorials not downloaded",
+      "reusePermission": "Not established; GitHub API license metadata absent"
+    }
+  ],
+  "toolchain": {
+    "skillValidatorDependency": {
+      "name": "PyYAML",
+      "version": "6.0.3",
+      "wheel": "pyyaml-6.0.3-cp312-cp312-win_amd64.whl",
+      "sha256": "5fcd34e47f6e0b794d17de1b4ff496c00986e1c83f7ab2fb8fcfe9616ff7477b",
+      "source": "https://pypi.org/pypi/PyYAML/6.0.3/json",
+      "status": "Local dependency of the skill-creator validator only; not required by the mod pipeline"
+    },
+    "luaChecker": {
+      "name": "lupa",
+      "version": "2.6",
+      "runtime": "Lua 5.4",
+      "wheel": "lupa-2.6-cp312-cp312-win_amd64.whl",
+      "url": "https://files.pythonhosted.org/packages/b8/15/5121e68aad3584e26e1425a5c9a79cd898f8a152292059e128c206ee817c/lupa-2.6-cp312-cp312-win_amd64.whl",
+      "sha256": "c735a1ce8ee60edb0fe71d665f1e6b7c55c6021f1d340eb8c865952c602cd36f",
+      "status": "Locally bootstrapped; ignored .tools/python"
+    },
+    "loaderCandidate": {
+      "source": "https://www.nexusmods.com/thelastcaretaker/mods/4?tab=description",
+      "version": "UE4SS_v3.0.1-1125-g527a483b (game-specific package v1.3)",
+      "dllSha256": "4f9762f812329a640c8cfa14444c2bb97ecc213b8320bd4c5433383c3eef48f7",
+      "status": "Author-published candidate; not downloaded, installed, or runtime verified"
+    }
+  }
+}
