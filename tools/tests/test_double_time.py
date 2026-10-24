@@ -1,117 +1,130 @@
-"""Exercise the shipped entry point with the native post-hook calling convention."""
+"""Exercise actual asset writes, lifecycle scans, and cross-Lua reload journaling."""
+from pathlib import Path
+import tempfile
 import unittest
-from test_pipeline import p
+from test_pipeline import p, TEST_ROOT
 
 
 class DoubleTimeTests(unittest.TestCase):
-    def runtime(self, setup=""):
+    def setUp(self):
+        self.temp = tempfile.TemporaryDirectory(dir=TEST_ROOT)
+        self.addCleanup(self.temp.cleanup)
+        self.root = Path(self.temp.name)
+        (self.root / 'scripts').mkdir()
+
+    def runtime(self, setup='', engine=123):
         lua = p.lua_runtime()
         logs = []
         lua.globals().print = logs.append
+        lua.globals().engineAddress = engine
         lua.execute('''
-            function object(name, good)
-                return {IsValid=function() return good ~= false end,
-                        GetFullName=function() return name end}
+            items = {}
+            pending = {}
+            function asset(name, scrap, repair)
+                local item = {DismantleDuration=scrap, RepairDuration=repair,
+                    CraftTime=30, DismantleElectricityCost=7, RepairElectricityCost=9}
+                item.GetFullName = function() return name end
+                item.IsValid = function() return item.alive ~= false end
+                return item
             end
-            function param(value) return {get=function() return value end} end
-            function fname(value) return {ToString=function() return value end} end
-            function StaticFindObject(path)
-                local result = object(path)
-                if path:find("GetPlayerItemActionTotalDuration", 1, true) then
-                    result.ForEachProperty = function(self, callback)
-                        for _, name in ipairs(signature or {"InPlayerController", "Item", "InAction", "ReturnValue"}) do
-                            callback({GetFName=function() return fname(name) end,
-                                      GetFullName=function() return name end})
-                        end
-                    end
-                else
-                    result.ForEachName = function(self, callback)
-                        for name, value in pairs(enumValues or {Dismantle=0, Repair=1, Build=2, Craft=3}) do
-                            callback(fname("EVoyagePlayerEnhancerItemActionType::" .. name), value)
-                        end
-                    end
-                end
-                return result
+            function FindFirstOf(name)
+                return {IsValid=function() return true end,
+                        GetAddress=function() return engineAddress end}
             end
-            function RegisterHook(path, pre, post)
-                hookPath, preHook, postHook = path, pre, post
-                return 11, 12
+            function FindAllOf(name) assert(name=='VoyageItem'); return items end
+            function NotifyOnNewObject(path, callback) newItem = callback end
+            function RegisterLoadMapPostHook(callback) mapLoaded = callback end
+            function ExecuteWithDelay(ms, callback)
+                assert(ms==1000); pending[#pending+1] = callback
             end
-            function query(value, action, item, context)
-                local original = param(value)
-                local replacement = postHook(param(context or object("Library")), original,
-                    param(object("Controller")), param(item or object("TestItem")), param(action))
-                -- A native post hook returns an override; nil preserves the original.
-                assert(original:get() == value or value ~= value, "modified original wrapper")
-                if replacement == nil then return value end
-                return replacement
+            function ExecuteInGameThread(callback) callback() end
+            function flushCallbacks()
+                local callbacks = pending; pending = {}
+                for _, callback in ipairs(callbacks) do callback() end
             end
         ''')
         lua.execute(setup)
-        lua.execute((p.ROOT / "mods/DoubleTime/scripts/main.lua").read_text())
+        source = (p.ROOT / 'mods/DoubleTime/scripts/main.lua').read_text()
+        lua.execute(source, name='@' + (self.root / 'scripts/main.lua').as_posix())
         return lua, logs
 
-    def test_tool_and_enhancement_matrix_uses_each_original_result(self):
-        lua, logs = self.runtime()
-        for base in (0.04, 1, 8, 90):
-            for tool_factor in (1, 0.75, 0.4):
-                for enhancement_factor in (1, 0.8, 0.5):
-                    vanilla = base * tool_factor * enhancement_factor
-                    for action in (0, 1):
-                        for _ in range(3):
-                            self.assertAlmostEqual(lua.globals().query(vanilla, action), vanilla / 2)
-        self.assertIn("ready:", "".join(logs))
+    def test_base_fields_halved_once_across_lifecycle_and_upgrade_combinations(self):
+        lua, logs = self.runtime('items={asset("VoyageItem /Game/Test.A", 20, 8)}')
+        lua.globals().flushCallbacks()
+        item = lua.globals()["items"][1]
+        self.assertEqual(item.DismantleDuration, 10)
+        self.assertEqual(item.RepairDuration, 4)
+        for tool in (1, .75, .4):
+            for enhancer in (1, .8, .5):
+                self.assertAlmostEqual(item.DismantleDuration * tool * enhancer, 20 * tool * enhancer / 2)
+        for _ in range(4):
+            lua.globals().mapLoaded()
+            lua.globals().flushCallbacks()
+        self.assertEqual(item.DismantleDuration, 10)
+        self.assertEqual(item.CraftTime, 30)
+        self.assertEqual(item.DismantleElectricityCost, 7)
+        self.assertEqual(item.RepairElectricityCost, 9)
+        self.assertEqual(sum('applied:' in line for line in logs), 2)
 
-    def test_enum_names_drive_action_selection(self):
-        lua, _ = self.runtime('enumValues = {Dismantle=7, Repair=9, Build=0, Craft=1}')
-        for action in (7, 9):
-            self.assertEqual(lua.globals().query(10, action), 5)
-        for action in (0, 1, 2, 3, 99):
-            self.assertEqual(lua.globals().query(10, action), 10)
-
-    def test_invalid_values_and_objects_preserve_vanilla(self):
-        lua, logs = self.runtime()
-        for value in (0, -1, float("inf"), -float("inf"), "bad"):
-            self.assertEqual(lua.globals().query(value, 0), value)
-        self.assertNotEqual(lua.globals().query(float("nan"), 1), 0)
-        invalid = lua.globals().object("Destroyed", False)
-        self.assertEqual(lua.globals().query(10, 0, invalid), 10)
-        self.assertEqual(lua.globals().query(10, 1, None, invalid), 10)
-        self.assertIn("fallback-", "".join(logs))
-
-    def test_reload_and_repeated_queries_do_not_mutate_item_or_original(self):
-        for _ in range(2):
-            lua, logs = self.runtime()
-            item = lua.globals().object("SameItem")
-            item.DismantleDuration = 20
-            for _ in range(5):
-                self.assertEqual(lua.globals().query(8, 0, item), 4)
-            self.assertEqual(lua.globals().query(4, 0, item), 2)
-            self.assertEqual(item.DismantleDuration, 20)
-            self.assertEqual(sum("duration-Dismantle:" in line for line in logs), 2)
-
-    def test_contract_or_missing_api_refuses_activation(self):
-        for setup in (
-            'RegisterHook=nil',
-            'StaticFindObject=nil',
-            'signature={"InPlayerController", "Item", "ReturnValue", "InAction"}',
-            'enumValues={Build=0, Craft=1}',
-            'function RegisterHook() error("fixture hook rejection") end',
-        ):
-            lua, logs = self.runtime(setup)
-            text = "".join(logs)
-            self.assertIn("failed:", text)
-            self.assertNotIn("ready:", text)
-
-    def test_callback_failure_leaves_original_and_reports_transition(self):
-        lua, logs = self.runtime()
+    def test_new_assets_are_debounced_and_scanned_after_serialization(self):
+        lua, _ = self.runtime()
+        lua.globals().flushCallbacks()
         lua.execute('''
-            local broken = {get=function() error("expired param") end}
-            assert(postHook(param(object("Library")), param(8), nil, nil, broken) == nil)
-            assert(postHook(param(object("Library")), param(8), nil, nil, broken) == nil)
+            items[1]=asset("VoyageItem /Game/New.A", 0, 0)
+            for i=1,10 do newItem(items[1]) end
+            assert(#pending==1)
+            items[1].DismantleDuration=12
+            items[1].RepairDuration=6
+            flushCallbacks()
+            assert(items[1].DismantleDuration==6 and items[1].RepairDuration==3)
         ''')
-        self.assertEqual(sum("failure:" in line for line in logs), 1)
+
+    def test_new_lua_state_recovers_originals_without_compounding(self):
+        first, _ = self.runtime('items={asset("VoyageItem /Game/Test.A", 20, 8)}')
+        first.globals().flushCallbacks()
+        second, logs = self.runtime('items={asset("VoyageItem /Game/Test.A", 10, 4)}')
+        second.globals().flushCallbacks()
+        self.assertEqual(second.globals()["items"][1].DismantleDuration, 10)
+        self.assertIn('recovered current session', ''.join(logs))
+        # Reinstantiated asset in the same process starts with its vanilla base.
+        second.execute('items={asset("VoyageItem /Game/Test.A", 20, 8)}; mapLoaded(); flushCallbacks()')
+        self.assertEqual(second.globals()["items"][1].DismantleDuration, 10)
+
+    def test_new_process_discards_old_session_and_accepts_changed_game_values(self):
+        first, _ = self.runtime('items={asset("VoyageItem /Game/Test.A", 20, 8)}')
+        first.globals().flushCallbacks()
+        fresh, logs = self.runtime('items={asset("VoyageItem /Game/Test.A", 10, 6)}', engine=456)
+        fresh.globals().flushCallbacks()
+        self.assertEqual(fresh.globals()["items"][1].DismantleDuration, 5)
+        self.assertEqual(fresh.globals()["items"][1].RepairDuration, 3)
+        self.assertIn('new game session', ''.join(logs))
+
+    def test_invalid_default_and_non_asset_objects_are_preserved(self):
+        lua, _ = self.runtime('''
+            items={asset("VoyageItem /Script/Voyage.Default__VoyageItem", 20, 8),
+                   asset("VoyageItem /Engine/Test.A", 20, 8),
+                   asset("VoyageItem /Game/Bad.A", -1, 0),
+                   asset("VoyageItem /Game/Gone.A", 20, 8)}
+            items[4].alive=false
+        ''')
+        lua.globals().flushCallbacks()
+        self.assertEqual(lua.globals()["items"][1].DismantleDuration, 20)
+        self.assertEqual(lua.globals()["items"][2].DismantleDuration, 20)
+        self.assertEqual(lua.globals()["items"][3].DismantleDuration, -1)
+        self.assertEqual(lua.globals()["items"][4].DismantleDuration, 20)
+
+    def test_corrupt_reload_ledger_refuses_writes(self):
+        (self.root / 'runtime-baselines.tsv').write_text('DoubleTime-v2\t7B\ncorrupted\n')
+        lua, logs = self.runtime('items={asset("VoyageItem /Game/Test.A", 10, 4)}')
+        lua.globals().flushCallbacks()
+        self.assertEqual(lua.globals()["items"][1].DismantleDuration, 10)
+        self.assertIn('invalid reload ledger', ''.join(logs))
+
+    def test_missing_api_stays_inactive(self):
+        lua, logs = self.runtime('NotifyOnNewObject=nil')
+        self.assertIn('failed:', ''.join(logs))
+        self.assertEqual(len(lua.globals().pending), 0)
 
 
-if __name__ == "__main__":
+if __name__ == '__main__':
     unittest.main()

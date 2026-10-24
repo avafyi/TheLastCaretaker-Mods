@@ -30,7 +30,7 @@ Steam discovery reads `libraryfolders.vdf` and app `1783560`'s `installdir`; the
 
 The [game-specific loader author](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=description) identifies v1.3 as UE4SS `3.0.1-1125-g527a483b`, with commit `527a483b`. The reviewed Nexus file 1088 ZIP has SHA-256 `28b1e3b5c4efd6898cf1edc16b4118b2067bec94eda42fe8e53b026e235087a4` and its actual `UE4SS.dll` has SHA-256 `91d5444f41d19d0bb502f0fbdc15d76421e20359e898caa39e41e134c8f87958`. Their notes claim UE5.8/game v0.8.5.X compatibility. The installed game's exact engine minor version and compatibility have **not** been independently established. Revisit the baseline if startup fails or the game updates; do not substitute an arbitrary latest archive.
 
-1. Download the author's v1.3 ZIP from the [files page](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=files). Nexus may require your login. Setup does not automate account access or install this loader.
+1. Download the author's v1.3 ZIP from the [files page](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=files). Nexus may require your login. Account sign-in stays with the user; installation uses the separate guarded command below.
 2. Review the archive source and compute its SHA-256 with `Get-FileHash '<archive.zip>' -Algorithm SHA256`. Pass that exact hash to pin the entire reviewed archive; the pipeline additionally enforces the reviewed package DLL hash.
 3. Stage it locally; expected ZIP layout is `dwmapi.dll` plus `ue4ss/UE4SS.dll`, settings, and bundled support files:
 

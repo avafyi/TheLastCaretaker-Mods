@@ -1,25 +1,16 @@
 # Current work and handoff
 
-## Project setup
+## Live mod setup (2026-10-23)
 
-- Implemented the Flotsam-style repository/workflows for The Last Caretaker, with Unreal-specific tooling and original diagnostic starter. User confirmed this chat's scope is setup for additional mod-development chats.
-- Local Lua checker bootstrapped, registry validation and DevProbe build/package successful. Twenty initial meaningful tests passed: dry-run isolation, ownership/collision guards, current install, backup/config/list preservation, externally edited files, obsolete files, running-game guard, rollback/hash checks, path/archive containment, loader conflict preflight, lock, dirty source, Lua ready/fallback, invalid syntax, and ZIP contents.
-- Lua sample and two author READMEs downloaded from pinned public GitHub commits and inspected read-only. Their hashes/provenance are in `references/manifest.json`. No third-party mod installed, executed, or copied into original source.
-- Local Vortex scan found no Last Caretaker staging/download folder; reference research therefore used public author pages and GitHub source. No Vortex configuration changed.
-- All five project skills passed the skill-creator validator. Local Markdown links and downloaded reference hashes passed verification. PowerShell wrappers parsed successfully, and a real-path DevProbe deployment dry run succeeded without creating a game loader/mod directory.
+- User authorized loader installation and everything needed for mods. Verified Nexus v1.3 file 1088 archive and installed 19 absent files through the guarded pipeline with the game closed. Bundled Lua helpers/Blueprint loader are present; no existing shared list overwritten.
+- The genuine archive's DLL differs from the author's description-quoted DLL hash. Pinned both reviewed archive and actual DLL in `tools/caretakermods.py`; evidence is in [modding research](topics/modding-research.md) and `references/manifest.json`. No integrity guard was bypassed.
+- Fresh loader launch identifies commit `527a483b`, detects engine 5.8, and logs DevProbe 0.1.0 ready. User confirmed the main menu worked. DevProbe was deployed via pipeline; payload hashes verified.
+- DoubleTime 0.1.0 was registered/deployed and initialized, but the user found gameplay timing unchanged. The 0.2.0 replacement scales reflected native item-duration fields; follow mod notes for its current deployment/test status. See `mods/DoubleTime/AGENT-NOTES.md` and `WORKING-NOTES.md` for gameplay coverage and pending timing matrix.
+- Registry/build/package pass; 26 tests pass (20 pipeline/probe fixtures plus 6 DoubleTime behavioral tests). Syntax/fixture/startup success does not establish every gameplay code path.
 
-## Next chat
+## Shared guidance and pending work
 
-- Start with `$caretaker-refresh`. For the first gameplay mod, read [scrapping and repair](topics/scrapping-and-repair.md), choose a name, scaffold/register it, and inspect the current runtime types before selecting a hook.
-- Loader ZIP acquisition/staging and live runtime validation remain pending. Nexus's game-specific loader may require login to download; see `docs/DEVELOPMENT.md`. The baseline DLL hash is pinned, but runtime compatibility with the current Steam build is not proven.
-- No gameplay implementation, live loader installation, game-file writes, push, publication, or save edits performed during setup. Do not mistake source/syntax/fixture success for successful in-game execution.
-- Shared tooling diagnostics log downloads/checksums, validation, build/source hash, package hash, deployment plans, backups, verified writes, rollback, and failures. Retain integrity/failure logging; reduce verbose successful-write/API diagnostics after the first live deployment is verified.
-
-## Current live setup
-
-- User authorized loader installation and complete mod setup. Verified and installed Nexus v1.3 file 1088 with the game closed (19 verified writes); no prior loader existed.
-- Updated `tools/caretakermods.py`, `docs/DEVELOPMENT.md`, and `references/manifest.json` to pin the actual reviewed archive/DLL pair; prior author-quoted DLL hash did not match the authentic downloaded package. Shared guidance changed: refresh these files before further installs.
-- All 20 existing disposable fixture/Lua tests pass after the pin update. Fresh game startup, DevProbe ready log, and runtime timing inspection remain pending.
-- No push/publication or save edits. Mod implementation continues in its own scope once the reflected contract is established.
-
-- Fresh setup launch: UE4SS log identifies commit `527a483b`, detects engine 5.8, and logs DevProbe 0.1.0 ready. User confirmed the main menu worked. Ctrl+J dump was requested; no dump file found yet. DoubleTime implementation/testing now lives under `mods/DoubleTime/`.
+- Changed shared guidance: `docs/DEVELOPMENT.md`, `references/manifest.json`, loader constants in `tools/caretakermods.py`, and mod registry. Refresh these before more setup/deployment.
+- User generated a Ctrl+J reflection dump (69,467,988 bytes), retained/hash-recorded under ignored `references/dumps/`. Keep raw dumps, game assets/disassembly, and downloaded sources ignored.
+- Initial scaffold/workflows, pinned Lua checker, reference provenance, and skill validation were completed earlier. No publication, push, Vortex configuration changes, or direct save edits.
+- Retain integrity/failure diagnostics. DoubleTime's temporary diagnostics cleanup criteria and exact runtime matrix live in its working notes.
