@@ -28,10 +28,10 @@ Steam discovery reads `libraryfolders.vdf` and app `1783560`'s `installdir`; the
 
 ## Loader setup
 
-The [game-specific loader author](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=description) identifies v1.3 as UE4SS `3.0.1-1125-g527a483b`, with `UE4SS.dll` SHA-256 `4f9762f812329a640c8cfa14444c2bb97ecc213b8320bd4c5433383c3eef48f7`. Their notes claim UE5.8/game v0.8.5.X compatibility. The installed game's exact engine minor version and compatibility have **not** been independently established. Revisit the baseline if startup fails or the game updates; do not substitute an arbitrary latest archive.
+The [game-specific loader author](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=description) identifies v1.3 as UE4SS `3.0.1-1125-g527a483b`, with commit `527a483b`. The reviewed Nexus file 1088 ZIP has SHA-256 `28b1e3b5c4efd6898cf1edc16b4118b2067bec94eda42fe8e53b026e235087a4` and its actual `UE4SS.dll` has SHA-256 `91d5444f41d19d0bb502f0fbdc15d76421e20359e898caa39e41e134c8f87958`. Their notes claim UE5.8/game v0.8.5.X compatibility. The installed game's exact engine minor version and compatibility have **not** been independently established. Revisit the baseline if startup fails or the game updates; do not substitute an arbitrary latest archive.
 
 1. Download the author's v1.3 ZIP from the [files page](https://www.nexusmods.com/thelastcaretaker/mods/4?tab=files). Nexus may require your login. Setup does not automate account access or install this loader.
-2. Review the archive source and compute its SHA-256 with `Get-FileHash '<archive.zip>' -Algorithm SHA256`. Pass that exact hash to pin the entire reviewed archive; the pipeline additionally enforces the author's published DLL hash.
+2. Review the archive source and compute its SHA-256 with `Get-FileHash '<archive.zip>' -Algorithm SHA256`. Pass that exact hash to pin the entire reviewed archive; the pipeline additionally enforces the reviewed package DLL hash.
 3. Stage it locally; expected ZIP layout is `dwmapi.dll` plus `ue4ss/UE4SS.dll`, settings, and bundled support files:
 
 ```powershell
@@ -68,7 +68,7 @@ The generated empty `enabled.txt` activates an independent mod without rewriting
 
 Replacements use same-directory staged files, SHA-256 verification, and rollback on an exception. Replaced bytes are retained under `artifacts/backups/<transaction>/`, with `index.json` mapping numbered backup files to original absolute paths. With the game closed, restore the affected files and matching ownership manifest together. A sudden power/process loss can interrupt a multi-file transaction; backups and the manifest enable inspection/recovery. Never restore by synchronizing/deleting the entire Mods tree.
 
-Package/syntax checks and file hashes do not establish runtime compatibility. After a fresh launch, check loader startup, expected mod version/ready log, relevant behavior, fallback, and new errors. Use a disposable save for gameplay changes. No deployment or loader installation is part of initial project scaffolding.
+Package/syntax checks and file hashes do not establish runtime compatibility. After a fresh launch, check loader startup, expected mod version/ready log, relevant behavior, fallback, and new errors. Use a disposable save for gameplay changes. Initial scaffolding performed no deployment. On 2026-10-23 the user authorized live mod setup; the verified v1.3 loader was installed. Fresh launch verification is tracked in the ops working notes.
 
 ## Handoff
 

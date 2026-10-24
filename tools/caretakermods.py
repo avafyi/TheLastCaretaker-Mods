@@ -20,7 +20,10 @@ ROOT = Path(__file__).resolve().parents[1]
 BINARY = Path("Voyage/Binaries/Win64")
 EXE = "VoyageSteam-Win64-Shipping.exe"
 INSTALL = ".caretakermods-install.json"
-LOADER_HASH = "4f9762f812329a640c8cfa14444c2bb97ecc213b8320bd4c5433383c3eef48f7"
+# Nexus file 1088: archive hash matches its linked VirusTotal record. The actual
+# bundled DLL differs from the hash quoted in the author's description.
+LOADER_HASH = "91d5444f41d19d0bb502f0fbdc15d76421e20359e898caa39e41e134c8f87958"
+LOADER_ARCHIVE_HASH = "28b1e3b5c4efd6898cf1edc16b4118b2067bec94eda42fe8e53b026e235087a4"
 WHEEL = "lupa-2.6-cp312-cp312-win_amd64.whl"
 WHEEL_URL = "https://files.pythonhosted.org/packages/b8/15/5121e68aad3584e26e1425a5c9a79cd898f8a152292059e128c206ee817c/" + WHEEL
 WHEEL_HASH = "c735a1ce8ee60edb0fe71d665f1e6b7c55c6021f1d340eb8c865952c602cd36f"
@@ -196,6 +199,8 @@ def bootstrap(root=ROOT, lua_wheel=None, loader_archive=None, archive_sha256=Non
     if loader_archive:
         if not archive_sha256 or not re.fullmatch(r"[a-fA-F0-9]{64}", archive_sha256):
             raise ValueError("Supply --archive-sha256 for the exact reviewed UE4SS ZIP")
+        if archive_sha256.lower() != LOADER_ARCHIVE_HASH:
+            raise ValueError("Expected reviewed Nexus v1.3 file 1088 archive checksum")
         destination = root / ".cache" / ("loader-" + uuid.uuid4().hex)
         extract_verified(Path(loader_archive), archive_sha256.lower(), destination)
         dll = destination / "ue4ss/UE4SS.dll"

@@ -7,3 +7,5 @@
 - `DevProbe` is the only registered mod: original startup diagnostics, no gameplay hooks or save mutations. Setup does not deploy it or install the loader.
 - User wants future chats to begin mod work. First planned feature: halve all scrapping and repairing durations, preserving enhancement/tool-upgrade scaling. Requirements are recorded in [scrapping and repair](topics/scrapping-and-repair.md); implementation is deferred.
 - Root `AGENTS.md` owns shared policy; `docs/DEVELOPMENT.md` owns commands; project-local skills route context. Future chats should use `$caretaker-refresh` first.
+
+- Live mod setup authorized 2026-10-23; reviewed Nexus v1.3 loader installed through the pipeline. See the live-setup evidence in the research topic. The package DLL hash differs from the author description; both archive and actual DLL are now pinned.

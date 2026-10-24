@@ -52,3 +52,13 @@ No scrapping or repairing contract was established from this sample. No reposito
 ## Next research
 
 Establish loader startup first. Then inspect runtime reflection and the actual scrapping/repair upgrade calculation paths; see [first planned mod](scrapping-and-repair.md). Record each dump's game build, executable hash, loader version/hash, and date under ignored `references/dumps/`, with durable original observations linked here.
+
+## Authorized live setup (2026-10-23)
+
+The user requested loader installation and everything needed to make mods work. Nexus required sign-in and its legacy slow-download page failed; the user downloaded file 1088 in their usual browser. Found at Windows Downloads as `UE4SS TLC UE5 8 4 v1.3 2026-09-06T16-23Z P9QzVp5TK.zip` (8,392,579 bytes).
+
+- Archive SHA-256 `28b1e3b5c4efd6898cf1edc16b4118b2067bec94eda42fe8e53b026e235087a4` matches the VirusTotal record linked from the current Nexus file entry.
+- Actual DLL SHA-256 `91d5444f41d19d0bb502f0fbdc15d76421e20359e898caa39e41e134c8f87958`; embedded commit string `527a483b`.
+- This differs from the author's description-quoted DLL hash. The original pipeline correctly refused it. Updated the baseline to the inspected package and additionally pinned the whole archive; do not describe the actual DLL hash as author-published.
+- Guarded install wrote and verified 19 previously absent files with the game closed, including bundled shared Lua helpers and Blueprint loader. No existing shared list was overwritten. Staged per-file provenance is ignored under `.tools/loader-provenance.json`.
+- No FModel, mapping file, or asset encryption key is required for native reflected Lua functions. Those may become research prerequisites if the timing paths require Blueprint disassembly.
