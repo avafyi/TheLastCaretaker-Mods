@@ -12,6 +12,8 @@ local diagnosticHooks = {}
 local diagnosticState = {}
 local scrapTimingReady = false
 local maintenancePath = "/Game/Blueprints/Equipment/ToolAbilities/BP_ToolAbility_Maintenance_Dismantle.BP_ToolAbility_Maintenance_Dismantle_C"
+local chargePath = "/Game/Blueprints/Equipment/ToolAbilities/BP_ToolAbility_Maintenance_Base.BP_ToolAbility_Maintenance_Base_C:OnAbilityCharged"
+local timingByAbility = {}
 
 local function log(event, detail)
     print(prefix .. event .. ": " .. tostring(detail) .. "\n")
@@ -99,34 +101,69 @@ local function installScrapTiming()
     if scrapTimingReady then return end
     local path = maintenancePath .. ":GetActionDuration"
     local func = StaticFindObject(path)
-    if not func or not func:IsValid() then
+    local chargeFunc = StaticFindObject(chargePath)
+    if not func or not func:IsValid() or not chargeFunc or not chargeFunc:IsValid() then
         if diagnosticState.timing ~= "waiting" then
             diagnosticState.timing = "waiting"
             log("timing-wait", "scrapping tool class not loaded; base dismantling fields remain vanilla")
         end
         return
     end
-    local preId, postId = RegisterHook(path, function(_, _, targetParam, durationParam)
-        local ok, failure = pcall(function()
-            local original = durationParam:get()
-            local target = targetParam:get()
-            if not finitePositive(original) or not target or not target:IsValid() then return end
-            local desired = original * durationFactor
-            durationParam:set(desired)
-            assert(durationParam:get() == desired, "final scrap duration readback mismatch")
-            local name = target:GetFullName()
-            local state = string.format("vanilla=%.9g; modded=%.9g; factor=%.1f", original, desired, durationFactor)
-            if diagnosticState["timing:" .. name] ~= state then
-                diagnosticState["timing:" .. name] = state
-                log("scrap-duration", "target=" .. name .. "; " .. state)
-            end
+    if not diagnosticHooks[path] then
+        local preId, postId = RegisterHook(path, function(context, _, targetParam, durationParam)
+            local ok, failure = pcall(function()
+                local original = durationParam:get()
+                local target = targetParam:get()
+                local ability = context:get()
+                if not finitePositive(original) or not target or not target:IsValid() or not ability or not ability:IsValid() then return end
+                -- Both hooks are required: a shortened job can complete before the
+                -- native charge reaches the Blueprint OnAction >0.99 guard.
+                local desired = original * (scrapTimingReady and durationFactor or 1.0)
+                durationParam:set(desired)
+                assert(durationParam:get() == desired, "final scrap duration readback mismatch")
+                local name = target:GetFullName()
+                timingByAbility[ability:GetAddress()] = {
+                    name=ability:GetFullName(), target=name, duration=desired, factor=durationFactor
+                }
+                local state = string.format("vanilla=%.9g; modded=%.9g; factor=%.1f", original, desired, durationFactor)
+                if diagnosticState["timing:" .. name] ~= state then
+                    diagnosticState["timing:" .. name] = state
+                    log("scrap-duration", "target=" .. name .. "; " .. state)
+                end
+            end)
+            if not ok then log("timing-failure", tostring(failure)) end
+            -- Blueprint post-hook: duration is an out param, not ReturnValue.
         end)
-        if not ok then log("timing-failure", tostring(failure)) end
-        -- Blueprint post-hook: duration is an out param, not ReturnValue.
-    end)
-    diagnosticHooks[path] = {preId, postId}
+        diagnosticHooks[path] = {preId, postId}
+    end
+    if not diagnosticHooks[chargePath] then
+        local preId, postId = RegisterHook(chargePath, function(context, _, _, heldParam)
+            local ok, failure = pcall(function()
+                if not scrapTimingReady or durationFactor == 1.0 then return end
+                local ability = context:get()
+                if not ability or not ability:IsValid() then return end
+                local timing = timingByAbility[ability:GetAddress()]
+                if not timing or timing.name ~= ability:GetFullName() or timing.factor ~= durationFactor then return end
+                local target = ability.AbilityTarget
+                if not target or not target:IsValid() or target:GetFullName() ~= timing.target then return end
+                local held = heldParam:get()
+                if type(held) ~= "number" or held ~= held or held < 0 or held == math.huge then return end
+                -- Match the Blueprint's clamped progress / near-one completion
+                -- test. Never promote a partial or cancelled action.
+                if held / timing.duration < 1.0 - 0.000001 then return end
+                local charge = ability.AbilityCharge
+                if type(charge) == "number" and charge == charge and charge >= 0 and charge <= 0.99 then
+                    ability.AbilityCharge = 1.0
+                    assert(ability.AbilityCharge == 1.0, "completion charge readback mismatch")
+                    log("scrap-completion-normalized", string.format("target=%s; held=%.9g; required=%.9g; charge=%.9g->1", timing.target, held, timing.duration, charge))
+                end
+            end)
+            if not ok then log("timing-failure", tostring(failure)) end
+        end)
+        diagnosticHooks[chargePath] = {preId, postId}
+    end
     scrapTimingReady = true
-    log("timing-hook", path .. "; final DoubleProperty out param; no base dismantle scaling")
+    log("timing-hook", path .. "; final output + completed-job charge normalization; no base dismantle scaling")
 end
 
 local function installDiagnostics()
@@ -202,7 +239,7 @@ local function scan(reason)
         end
         log("scan", string.format("reason=%s; found=%d; fields-changed=%d; failures=%d; factor=%.1f", reason, #items, changed, failed, durationFactor))
         if #items > 0 and failed == 0 then
-            log("ready", "version=0.3.0; repair fields verified; scrap-hook=" .. tostring(scrapTimingReady) .. "; duration-factor=" .. durationFactor)
+            log("ready", "version=0.3.1; repair fields verified; scrap-hook=" .. tostring(scrapTimingReady) .. "; duration-factor=" .. durationFactor)
         else
             log("fallback", "no complete asset scan yet; waiting for next load event")
         end
@@ -228,7 +265,7 @@ local function queueScan(reason)
     end)
 end
 
-log("init", "version=0.3.0; target=The Last Caretaker; final scrapping duration + repair data path")
+log("init", "version=0.3.1; target=The Last Caretaker; final scrapping duration + repair data path")
 log("config", "final scrap time/RepairDuration factor=0.5; DismantleDuration preserved; reload ledger enabled")
 local ok, failure = pcall(function()
     for _, name in ipairs({"FindFirstOf", "FindAllOf", "NotifyOnNewObject", "ExecuteWithDelay", "ExecuteInGameThread", "RegisterLoadMapPostHook", "RegisterHook", "StaticFindObject"}) do

@@ -31,21 +31,32 @@ class DoubleTimeTests(unittest.TestCase):
                 return {get=function() return value end, set=function(_, v) value=v end}
             end
             function scrapDuration(target, original)
+                ability.AbilityTarget=target
                 local result = param(original)
                 for path, hook in pairs(hooks) do
                     if path:find(':GetActionDuration', 1, true) then
-                        assert(hook.pre(nil, nil, param(target), result) == nil)
+                        assert(hook.pre(param(ability), nil, param(target), result) == nil)
                     end
                 end
                 return result:get()
+            end
+            function chargeUpdate(held)
+                for path, hook in pairs(hooks) do
+                    if path:find(':OnAbilityCharged', 1, true) then
+                        assert(hook.pre(param(ability), nil, param(ability.AbilityCharge), param(held)) == nil)
+                    end
+                end
             end
             function asset(name, scrap, repair)
                 local item = {DismantleDuration=scrap, RepairDuration=repair,
                     CraftTime=30, DismantleElectricityCost=7, RepairElectricityCost=9}
                 item.GetFullName = function() return name end
                 item.IsValid = function() return item.alive ~= false end
+                item.GetAddress = function() return item.address or 321 end
                 return item
             end
+            ability=asset('BP_ToolAbility_Maintenance_Dismantle_C /Game/Test.Tool', 0, 0)
+            ability.AbilityCharge=0
             function FindFirstOf(name)
                 return {IsValid=function() return true end,
                         GetAddress=function() return engineAddress end}
@@ -210,7 +221,7 @@ class DoubleTimeTests(unittest.TestCase):
                     assert(hook.pre(param(actor)) == nil)
                     assert(hook.pre(param(actor)) == nil)
                     assert(actor.bFoundConnection == false)
-                elseif not path:find('GetActionDuration', 1, true) then
+                elseif path:find('/Script/', 1, true) == 1 then
                     assert(hook.pre(nil, nil, param(actor), param(0)) == nil)
                     assert(hook.post(nil, param(true), nil, param(actor)) == nil)
                 end
@@ -241,6 +252,74 @@ class DoubleTimeTests(unittest.TestCase):
             self.assertEqual(lua.globals().scrapDuration(item, value), value)
         item.alive = False
         self.assertEqual(lua.globals().scrapDuration(item, 2), 2)
+
+    def test_subsecond_completed_job_satisfies_original_charge_guard(self):
+        lua, logs = self.runtime('items={asset("VoyageItem /Game/Cable.Extender", 2, 3)}')
+        lua.globals().flushCallbacks()
+        item = lua.globals()["items"][1]
+        duration = lua.globals().scrapDuration(item, 1.90222037)
+        self.assertAlmostEqual(duration, .951110185)
+        ability = lua.globals().ability
+        ability.AbilityCharge = .96
+        lua.globals().chargeUpdate(duration)
+        self.assertGreater(ability.AbilityCharge, .99)
+        self.assertEqual(item.DismantleDuration, 2)
+        self.assertIn('scrap-completion-normalized:', ''.join(logs))
+
+    def test_charge_normalization_leaves_partial_invalid_and_vanilla_jobs_alone(self):
+        lua, _ = self.runtime('items={asset("VoyageItem /Game/Cable.Extender", 2, 3)}')
+        lua.globals().flushCallbacks()
+        item = lua.globals()["items"][1]
+        lua.globals().scrapDuration(item, 2)
+        ability = lua.globals().ability
+        ability.AbilityCharge = .75
+        for held in (.5, .999, -1, float('nan'), float('inf')):
+            lua.globals().chargeUpdate(held)
+            self.assertEqual(ability.AbilityCharge, .75)
+        item.alive = False
+        lua.globals().chargeUpdate(1)
+        self.assertEqual(ability.AbilityCharge, .75)
+        item.alive = True
+        lua.globals().toggleTiming()
+        lua.globals().flushCallbacks()
+        lua.globals().scrapDuration(item, 2)
+        lua.globals().chargeUpdate(2)
+        self.assertEqual(ability.AbilityCharge, .75)
+
+    def test_charge_normalization_is_scoped_to_the_matching_scrapping_component_and_target(self):
+        lua, _ = self.runtime('items={asset("VoyageItem /Game/Cable.Extender", 2, 3)}')
+        lua.globals().flushCallbacks()
+        lua.globals().scrapDuration(lua.globals()["items"][1], 2)
+        lua.execute('''
+            local old = ability
+            ability=asset('RepairAbility /Game/Test.Repair', 0, 0)
+            ability.AbilityTarget=old.AbilityTarget
+            ability.AbilityCharge=.75
+            chargeUpdate(2)
+            assert(ability.AbilityCharge==.75)
+            ability=old
+            ability.AbilityTarget=asset('OtherTarget /Game/Test.B', 2, 3)
+            ability.AbilityCharge=.75
+            chargeUpdate(2)
+            assert(ability.AbilityCharge==.75)
+        ''')
+
+    def test_missing_charge_hook_keeps_final_scrap_time_vanilla_until_retry(self):
+        lua, logs = self.runtime('''
+            local register=RegisterHook
+            chargeUnavailable=true
+            function RegisterHook(path, pre, post)
+                if path:find(':OnAbilityCharged', 1, true) and chargeUnavailable then error('charge hook unavailable') end
+                return register(path, pre, post)
+            end
+            items={asset("VoyageItem /Game/Cable.Extender", 2, 3)}
+        ''')
+        lua.globals().flushCallbacks()
+        item = lua.globals()["items"][1]
+        self.assertEqual(lua.globals().scrapDuration(item, 2), 2)
+        lua.execute('chargeUnavailable=false; mapLoaded(); flushCallbacks()')
+        self.assertEqual(lua.globals().scrapDuration(item, 2), 1)
+        self.assertIn('charge hook unavailable', ''.join(logs))
 
 
 if __name__ == '__main__':
