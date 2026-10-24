@@ -8,3 +8,5 @@
 - Originals are journaled/flushed before asset mutation in mod-local `runtime-baselines.tsv`; repeated scans/recreated asset instances/Lua state reloads recover the original per field. GameEngine address identifies the process session; a new session captures fresh values. Corrupt current-session journal fails closed. This identity is practical reload protection, not a cryptographic process identifier.
 - Only those two duration fields change. Build/craft/consumption-rate/yield fields are preserved, but native total consumption formulas include duration, so totals can change. No direct save edits or game asset files are written.
 - Full coverage of custom destructibles (containers/plants/eggsacks have GetDismantleDuration overrides) needs actual action tests; the reflection dump alone does not prove their internal timing calculations.
+
+- Fresh 0.2.0 launch at 18:14 verified 911 assets / 1,822 duration writes with zero failures; next scan made zero changes. Journal path resolves correctly under the installed mod folder. This proves runtime field writes and idempotence, with actual completion timing tracked separately in working notes.
