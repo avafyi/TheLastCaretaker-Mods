@@ -1,5 +1,6 @@
 # Current state
 
+- Short name/commit prefix is `fastscrap`, requested 2026-10-24. This registry metadata change needs no runtime deployment or gameplay retest; CLI selection remains `--mod double-time`.
 - **Reported extender regression fixed in deployed 0.3.1.** On 2026-10-23 the user confirmed the requested unconnected electric extender "Disappears at 2x speed!" after the completion-charge fix. No additional deployment is needed for these evidence-only notes.
 - Runtime proof at 19:20:54: the final scrapping duration was 1.90222037 -> 0.951110184 seconds; the completion hook ran at held=0.958862901 and raised AbilityCharge from 0.958862901 to 1.0. The user confirms actual removal. Ctrl+J successfully completed at 19:21:01. Log snapshot/hash and installed/source hash match are recorded in AGENT-NOTES.
 - 0.3.1 deployed from `26dcaab`; rollback backup `artifacts/backups/cd58326b337d4d9bb0a2d4d1d6b51bdc`. Fresh 19:18 launch scanned 911 assets / 911 repair writes / zero failures, then zero repeat changes. Save-load added six repair writes; later scans again made zero changes. Both scrapping hooks registered after tool loading; no timing or scan failures observed.
