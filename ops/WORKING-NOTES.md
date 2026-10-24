@@ -21,3 +21,5 @@
 - Updated `tools/caretakermods.py`, `docs/DEVELOPMENT.md`, and `references/manifest.json` to pin the actual reviewed archive/DLL pair; prior author-quoted DLL hash did not match the authentic downloaded package. Shared guidance changed: refresh these files before further installs.
 - All 20 existing disposable fixture/Lua tests pass after the pin update. Fresh game startup, DevProbe ready log, and runtime timing inspection remain pending.
 - No push/publication or save edits. Mod implementation continues in its own scope once the reflected contract is established.
+
+- Fresh setup launch: UE4SS log identifies commit `527a483b`, detects engine 5.8, and logs DevProbe 0.1.0 ready. User confirmed the main menu worked. Ctrl+J dump was requested; no dump file found yet. DoubleTime implementation/testing now lives under `mods/DoubleTime/`.

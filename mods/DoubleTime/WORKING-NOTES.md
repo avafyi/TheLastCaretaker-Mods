@@ -1,0 +1,9 @@
+# Pending verification and diagnostics
+
+- Initial implementation: half the original native duration-query result for Dismantle/Repair only. No runtime success claimed until fresh-launch logs and gameplay evidence exist.
+- Pending: runtime reflection dump, signature order/type confirmation, hook ready log, actual query observations during both actions, inventory of every starter/upgraded tool (including Rhino) and custom destructible. If a tool bypasses this helper, trace its effective timing and add a non-overlapping path; do not silently claim all-action coverage.
+- Timing matrix: compare each tool tier with no enhancements and available enhancement combinations; small/large targets; partly damaged repair; cancel/retry; repeated actions; tool switch; save/load; fresh restart. Expected completion duration ratio is approximately 0.5 relative to each matching vanilla baseline. Check progress/completion, material costs/yields, electricity/fuel/durability, and unrelated build/craft durations.
+- Temporary diagnostics: initialization/config, reflected signature/enum, hook IDs, distinct action/item/effective-duration transitions, excluded actions, invalid inputs and failures. No per-frame progress logger. Remove successful-query/signature verbosity only after the matrix proves coverage and timing; retain initialization and failures.
+- Hook result changes are ephemeral. No save writes or stored stat mutations. Other mods that change the same query may compose with the multiplier; simultaneous DoubleTime copies are unsupported.
+
+- Local validation: registry/build/package passed; 26 tests pass (20 pipeline/probe plus 6 DoubleTime harness tests). The 144 tool/enhancement/action combinations each repeat three times with fresh original results; unrelated enums, reload, invalid values/objects, callback errors, and changed-contract refusal are exercised. These are fixtures, not gameplay measurements.

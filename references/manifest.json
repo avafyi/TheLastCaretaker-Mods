@@ -55,7 +55,7 @@
       "source": "https://www.nexusmods.com/thelastcaretaker/mods/4?tab=description",
       "version": "UE4SS_v3.0.1-1125-g527a483b (game-specific package v1.3)",
       "dllSha256": "91d5444f41d19d0bb502f0fbdc15d76421e20359e898caa39e41e134c8f87958",
-      "status": "Verified downloaded archive against Nexus-linked VirusTotal hash; embedded commit 527a483b; installed 2026-10-23; fresh startup pending",
+      "status": "Verified downloaded archive against Nexus-linked VirusTotal hash; embedded commit 527a483b; installed 2026-10-23; fresh loader/DevProbe startup verified; user confirmed main menu",
       "descriptionQuotedDllSha256": "4f9762f812329a640c8cfa14444c2bb97ecc213b8320bd4c5433383c3eef48f7",
       "archiveSha256": "28b1e3b5c4efd6898cf1edc16b4118b2067bec94eda42fe8e53b026e235087a4",
       "fileId": 1088

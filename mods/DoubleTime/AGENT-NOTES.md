@@ -1,0 +1,9 @@
+# Durable knowledge
+
+- User requirement: every scrapping/repairing action takes half its own vanilla duration, preserving tool/enhancement benefits. Do not change the enhancement curve or multiply persistent values repeatedly.
+- Registry: `double-time`, folder `DoubleTime`, prefix `double-time`, GUID `com.ava.thelastcaretaker.doubletime`.
+- Inspected current Steam build `25982825`, executable SHA-256 `08228b72d4590f9b00e2171f252d618464c2e04b785237fe728dddbf27d3b734`. Original static observations: compiled reflection registers `VoyageItemBlueprintFunctionLibrary:GetPlayerItemActionTotalDuration(InPlayerController, Item, InAction) -> float`. Action enum compiled values: Dismantle=0, Repair=1, Build=2, Craft=3. Runtime code resolves enum names rather than depending on these numbers.
+- Native helper computes the selected item's action duration times the player state's enhancement time multiplier. Its sole direct relative-call reference found in the executable is its reflected exec thunk; other native callers/inlining and Blueprint callers need separate coverage evidence. A second native caller of the enhancement helper uses only Build/Craft.
+- Selected native post-hook receives original result as second argument, followed by the original parameters; inspected upstream UE4SS commit `527a483b`, `UE4SS/src/Mod/LuaMod.cpp`. Return the scaled result; do not set an item property or also scale an enhancement/tool rate.
+- Native function presence and static data flow do not prove all Blueprint tools/custom destructibles use this path. Raw strings, reflection descriptors, and disassembly stay ignored under `references/dumps/`; no extracted game code distributed.
+- Loader setup and its archive/DLL hash discrepancy are recorded in `ops/topics/modding-research.md`. DevProbe loaded successfully and user confirmed main menu on the fresh setup launch.
