@@ -34,6 +34,13 @@ class DoubleTimeTests(unittest.TestCase):
             function FindAllOf(name) assert(name=='VoyageItem'); return items end
             function NotifyOnNewObject(path, callback) newItem = callback end
             function RegisterLoadMapPostHook(callback) mapLoaded = callback end
+            Key = {F10=121}
+            ModifierKey = {CONTROL=1, SHIFT=2}
+            function IsKeyBindRegistered() return false end
+            function RegisterKeyBindAsync(key, modifiers, callback)
+                assert(key==121 and modifiers[1]==1 and modifiers[2]==2)
+                toggleTiming = callback
+            end
             function ExecuteWithDelay(ms, callback)
                 assert(ms==1000); pending[#pending+1] = callback
             end
@@ -124,6 +131,66 @@ class DoubleTimeTests(unittest.TestCase):
         lua, logs = self.runtime('NotifyOnNewObject=nil')
         self.assertIn('failed:', ''.join(logs))
         self.assertEqual(len(lua.globals().pending), 0)
+
+    def test_diagnostic_toggle_restores_exact_originals_and_reapplies_once(self):
+        lua, logs = self.runtime('items={asset("VoyageItem /Game/Cable.Extender", 2, 3)}')
+        lua.globals().flushCallbacks()
+        item = lua.globals()["items"][1]
+        self.assertEqual(item.DismantleDuration, 1)
+        for _ in range(3):
+            lua.globals().toggleTiming()
+            lua.globals().flushCallbacks()
+            self.assertEqual(item.DismantleDuration, 2)
+            self.assertEqual(item.RepairDuration, 3)
+            lua.globals().mapLoaded()
+            lua.globals().flushCallbacks()
+            self.assertEqual(item.DismantleDuration, 2)
+            lua.globals().toggleTiming()
+            lua.globals().flushCallbacks()
+            self.assertEqual(item.DismantleDuration, 1)
+            self.assertEqual(item.RepairDuration, 1.5)
+        self.assertEqual(item.CraftTime, 30)
+        self.assertEqual(item.DismantleElectricityCost, 7)
+        self.assertIn('diagnostic-toggle', ''.join(logs))
+
+    def test_assets_loaded_during_vanilla_mode_use_unscaled_baselines(self):
+        lua, _ = self.runtime()
+        lua.globals().flushCallbacks()
+        lua.globals().toggleTiming()
+        lua.globals().flushCallbacks()
+        lua.execute('items={asset("VoyageItem /Game/Late.Extender", 2, 3)}; newItem(); flushCallbacks()')
+        self.assertEqual(lua.globals()["items"][1].DismantleDuration, 2)
+        lua.globals().toggleTiming()
+        lua.globals().flushCallbacks()
+        self.assertEqual(lua.globals()["items"][1].DismantleDuration, 1)
+
+    def test_diagnostic_hooks_observe_without_overriding_results(self):
+        lua, logs = self.runtime('''
+            hooks = {}
+            function StaticFindObject(path) return {IsValid=function() return true end} end
+            function RegisterHook(path, pre, post)
+                hooks[path]={pre=pre, post=post}
+                return 1,2
+            end
+        ''')
+        lua.globals().flushCallbacks()
+        lua.execute('''
+            local function param(value) return {get=function() return value end} end
+            local actor = asset("Extender /Game/Map.Extender", 2, 3)
+            actor.bFoundConnection = false
+            for path, hook in pairs(hooks) do
+                if path:find("CanDismantle", 1, true) then
+                    assert(hook.pre(param(actor)) == nil)
+                    assert(hook.pre(param(actor)) == nil)
+                    assert(actor.bFoundConnection == false)
+                else
+                    assert(hook.pre(nil, nil, param(actor), param(0)) == nil)
+                    assert(hook.post(nil, param(true), nil, param(actor)) == nil)
+                end
+            end
+        ''')
+        self.assertEqual(sum('extender-eligibility-query:' in line for line in logs), 1)
+        self.assertIn('dismantle-return: success=true', ''.join(logs))
 
 
 if __name__ == '__main__':

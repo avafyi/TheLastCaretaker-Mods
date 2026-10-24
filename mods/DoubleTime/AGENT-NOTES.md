@@ -12,3 +12,6 @@
 - Fresh 0.2.0 launch at 18:14 verified 911 assets / 1,822 duration writes with zero failures; next scan made zero changes. Journal path resolves correctly under the installed mod folder. This proves runtime field writes and idempotence, with actual completion timing tracked separately in working notes.
 
 - On 2026-10-23 the user confirmed 0.2.0 gameplay felt "noticeably about twice as fast" in response to the scrap/repair retest. This is qualitative confirmation for their tested setup; tool tier, enhancement points, target inventory, and measured timings were not supplied.
+
+- Regression report: a built electric cable extender remains after scrap progress completes and electricity is consumed. A newly built extender with no cables also survives. This rules out attached cables as a necessary trigger, but does not yet prove duration scaling is causal. Observed extender asset originals are DismantleDuration=2 and RepairDuration=3; 0.2.0 applies 1 and 1.5.
+- 0.2.1 is a diagnostic revision: Ctrl+Shift+F10 switches the existing journaled field multiplier between 0.5 and 1.0 via a debounced game-thread scan. Native DismantleDestructible and Blueprint extender CanDismantle hooks observe only; a missing native callback is inconclusive because direct native calls can bypass reflection hooks. No destruction/eligibility override is shipped.

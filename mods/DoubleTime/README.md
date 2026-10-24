@@ -1,6 +1,8 @@
 # DoubleTime
 
-Scrapping and repairing in half their vanilla time, preserving multiplicative enhancement/tool-upgrade scaling. Version 0.2.0; UE4SS Lua; logs `[Caretaker.DoubleTime]`.
+Scrapping and repairing in half their vanilla time, preserving multiplicative enhancement/tool-upgrade scaling. Version 0.2.1 diagnostic build; UE4SS Lua; logs `[Caretaker.DoubleTime]`.
+
+**Under investigation:** the user reports that built electric cable extenders survive a completed scrap action, including unconnected extenders. The cause is not yet established. With the game focused and no action in progress, press **Ctrl+Shift+F10** to switch between vanilla duration fields and 2× speed. Wait two seconds before testing; the log confirms `duration-factor=1.0` (vanilla) or `0.5` (2×). A fresh launch starts at 2×. This temporary diagnostic build also observes extender eligibility and the reflected destruction call without overriding their results. It is not a confirmed fix.
 
 The mod halves each loaded item asset's reflected `DismantleDuration` and `RepairDuration`. Native gameplay reads those fields directly; enhancements/tool factors continue through the game's original calculations. No timing query hook is installed, so the data change is not applied twice. Build/craft durations and consumption-rate/yield properties are not edited. Actual total time-based consumption can change with the shortened action.
 
