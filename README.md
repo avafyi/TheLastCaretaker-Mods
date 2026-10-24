@@ -2,6 +2,8 @@
 
 A Windows modding workshop modeled on `Flotsam-Mods`: one folder per mod, a registry, shared tooling, five Codex workflows, and durable operations notes. The target is **The Last Caretaker** (Steam app `1783560`, install folder `Voyage`). This game's Unreal/UE4SS Lua baseline replaces Flotsam's Unity/BepInEx/C# baseline.
 
+Source repository: [avafyi/TheLastCaretaker-Mods](https://github.com/avafyi/TheLastCaretaker-Mods) (public). Completed changes are committed at meaningful checkpoints and before live deployment preparation; GitHub pushes and releases require explicit authorization.
+
 ## Start here
 
 Open a new chat in this project and say `$caretaker-refresh`, then describe the mod. Read [Development](docs/DEVELOPMENT.md) for commands and [Operations](ops/README.md) for research and pending work. Root `AGENTS.md` routes fresh/resumed chats automatically.

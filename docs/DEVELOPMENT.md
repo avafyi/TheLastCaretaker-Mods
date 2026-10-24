@@ -72,4 +72,8 @@ Package/syntax checks and file hashes do not establish runtime compatibility. Af
 
 ## Handoff
 
-Use `AGENT-NOTES.md` for durable verified facts and `WORKING-NOTES.md` for uncertainty, pending tests, and temporary diagnostics. Shared policy is in root `AGENTS.md`; deeper research routes through `ops/README.md`. Commit shared work with `ops:` and mod work with its registered prefix. No remote/push/release is configured by setup.
+Use `AGENT-NOTES.md` for durable verified facts and `WORKING-NOTES.md` for uncertainty, pending tests, and temporary diagnostics. Shared policy is in root `AGENTS.md`; deeper research routes through `ops/README.md`.
+
+Commit shared work with `ops:` and mod work with its registered prefix at each meaningful checkpoint, before preparing a live deployment, and at task closure. A checkpoint is a coherent, reviewable change with proportionate validation; individual file saves and unfinished experiments do not each need a commit. Inspect staged changes and stage only task-owned paths/hunks, preserving concurrent chats' work. Commit proactively without waiting for another user request. Local deployment requires committed source; it never creates commits itself. GitHub pushes and releases require explicit authorization; the initial repository creation/publication was authorized on 2026-10-24.
+
+The public GitHub remote is `origin`: `https://github.com/avafyi/TheLastCaretaker-Mods.git`, with `main` as the shared branch. Only committed source/history is published; ignored game assets, dumps, downloaded references, local tools, configuration overrides, and generated packages remain local.

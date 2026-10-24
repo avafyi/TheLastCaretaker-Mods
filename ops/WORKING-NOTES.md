@@ -1,5 +1,12 @@
 # Current work and handoff
 
+## GitHub and commit workflow (2026-10-24)
+
+- User authorized creating a GitHub repository and publishing committed history. GitHub CLI is authenticated as `avafyi`; restricted-network auth checks can falsely report an invalid token, so verify with network access before requesting a login.
+- Created public `https://github.com/avafyi/TheLastCaretaker-Mods` and configured `origin`; user explicitly selected public visibility. Initial publication is scoped to committed source/history; downloaded/game material and unfinished concurrent changes remain local.
+- Root `AGENTS.md` and `docs/DEVELOPMENT.md` now require proactive commits at meaningful validated checkpoints, before live deployment preparation, and at task closure.
+- Concurrent Reel changes in `caretakermods.json` and `mods/Reel/` belong to the active Reel chat. This ops change stages only its own documentation; uncommitted concurrent work is not part of the initial publication.
+
 ## Live mod setup (2026-10-23)
 
 - User authorized loader installation and everything needed for mods. Verified Nexus v1.3 file 1088 archive and installed 19 absent files through the guarded pipeline with the game closed. Bundled Lua helpers/Blueprint loader are present; no existing shared list overwritten.

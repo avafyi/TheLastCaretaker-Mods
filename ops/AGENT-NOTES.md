@@ -7,6 +7,8 @@
 - Initial scaffold registered `DevProbe`: original startup diagnostics, no gameplay hooks or save mutations. Setup does not deploy it or install the loader.
 - User wants future chats to begin mod work. First planned feature: halve all scrapping and repairing durations, preserving enhancement/tool-upgrade scaling. Requirements are recorded in [scrapping and repair](topics/scrapping-and-repair.md); implementation now lives under `mods/DoubleTime/`.
 - Root `AGENTS.md` owns shared policy; `docs/DEVELOPMENT.md` owns commands; project-local skills route context. Future chats should use `$caretaker-refresh` first.
+- User requested GitHub repository creation/publication on 2026-10-24 and proactive local commits at each meaningful change checkpoint, before deployment preparation, and at closure. Preserve other chats' in-progress work. This request does not authorize automatic future pushes or releases.
+- Public GitHub repository: `https://github.com/avafyi/TheLastCaretaker-Mods`; `origin=https://github.com/avafyi/TheLastCaretaker-Mods.git`, branch `main`. User explicitly selected public visibility. GitHub CLI account: `avafyi`.
 
 - Live mod setup authorized 2026-10-23; reviewed Nexus v1.3 loader installed through the pipeline. See the live-setup evidence in the research topic. The package DLL hash differs from the author description; both archive and actual DLL are now pinned.
 
